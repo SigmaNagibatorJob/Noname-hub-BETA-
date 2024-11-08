@@ -1,0 +1,155 @@
+-- Уведомление
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "Murder Mastery 2";
+    Text = "от scriptmausrb привет!";
+    Duration = 15;
+})
+
+-- Библиотеки и сервисы
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Переменные
+local AutoCandys = false
+local TweenSpeed = 20 -- Скорость для предотвращения кика
+local NoClipEnabled = false
+
+-- Функция для поиска конфет
+local function FindCoinContainer()
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:FindFirstChild("CoinContainer") then
+            return obj.CoinContainer
+        end
+    end
+    return nil
+end
+
+local function GetNearestCandy()
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    local nearestCandy = nil
+    local shortestDistance = math.huge
+    local candyContainer = FindCoinContainer()
+    
+    if not candyContainer then return end
+    for _, candy in pairs(candyContainer:GetChildren()) do
+        if candy.Name == "Coin_Server" then
+            local coinVisual = candy:FindFirstChild("CoinVisual")
+            if coinVisual and coinVisual.Transparency == 0 then
+                local distance = (candy.Position - humanoidRootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearestCandy = candy
+                end
+            end
+        end
+    end
+    return nearestCandy
+end
+
+-- Запуск твина на ближайшую конфету
+local function StartCandyTween()
+    local nearestCandy = GetNearestCandy()
+    if nearestCandy then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            local tweenInfo = TweenInfo.new(
+                (nearestCandy.Position - humanoidRootPart.Position).Magnitude / TweenSpeed,
+                Enum.EasingStyle.Linear
+            )
+            local tween = TweenService:Create(humanoidRootPart, tweenInfo, {
+                CFrame = CFrame.new(nearestCandy.Position)
+            })
+            tween:Play()
+        end
+    end
+end
+
+-- Функция для сбора конфет
+local function CollectCandy()
+    while AutoCandys do
+        if not character then
+            character = player.Character or player.CharacterAdded:Wait()
+        end
+        StartCandyTween()
+        wait(0.1)
+    end
+end
+
+-- Функция для включения/выключения No Clip
+local function SetNoClip(value)
+    NoClipEnabled = value
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not NoClipEnabled
+        end
+    end
+end
+
+-- Главный интерфейс
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "No name Hub(BETA)", HidePremium = false, SaveConfig = true, ConfigFolder = "CandyFarmConfig"})
+
+-- Настройки интерфейса
+local TabMain = Window:MakeTab({
+    Name = "Фарм меню",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+TabMain:AddToggle({
+    Name = "Фарм конфет",
+    Default = false,
+    Callback = function(value)
+        AutoCandys = value
+        if AutoCandys then
+            task.spawn(CollectCandy)
+        end
+    end
+})
+
+TabMain:AddSlider({
+    Name = "Скорость фарма",
+    Min = 20,
+    Max = 25,
+    Default = 20,
+    Callback = function(speed)
+        TweenSpeed = speed
+    end
+})
+
+TabMain:AddToggle({
+    Name = "No Clip",
+    Default = true,
+    Callback = function(value)
+        SetNoClip(value)
+    end
+})
+
+-- Функция для перемещения персонажа под карту
+local function MoveCharacterUnderMap()
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if humanoidRootPart then
+        -- Перемещаем персонажа под карту
+        local spawnPosition = Vector3.new(0, -50, 0)  -- Позиция под картой
+        humanoidRootPart.CFrame = CFrame.new(spawnPosition)
+        
+        -- Устанавливаем персонажа в стоячее положение
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = true
+            humanoidRootPart.Anchored = false
+        end
+    end
+end
+
+-- Функция для постоянного удержания персонажа на месте под картой
+RunService.RenderStepped:Connect(function()
+    if AutoCandys then
+        MoveCharacterUnderMap()
+    end
+end)
