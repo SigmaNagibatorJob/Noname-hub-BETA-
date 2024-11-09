@@ -5,19 +5,16 @@ game:GetService("StarterGui"):SetCore("SendNotification", {
     Duration = 15;
 })
 
--- Библиотеки и сервисы
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-
--- Переменные
+local TweenSpeed = 20
 local AutoCandys = false
-local TweenSpeed = 20 -- Скорость для предотвращения кика
-local NoClipEnabled = false
+local teleportEnabled = false
+local noClipEnabled = false
 
--- Функция для поиска конфет
+-- Функция для нахождения контейнера с конфетами
 local function FindCoinContainer()
     for _, obj in pairs(workspace:GetChildren()) do
         if obj:FindFirstChild("CoinContainer") then
@@ -27,15 +24,20 @@ local function FindCoinContainer()
     return nil
 end
 
-local function GetNearestCandy()
+-- Получение ближайшей конфеты
+local function GetNearestCandy(player)
+    local character = player.Character
+    if not character then return end
+    
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
     
     local nearestCandy = nil
     local shortestDistance = math.huge
-    local candyContainer = FindCoinContainer()
     
+    local candyContainer = FindCoinContainer()
     if not candyContainer then return end
+    
     for _, candy in pairs(candyContainer:GetChildren()) do
         if candy.Name == "Coin_Server" then
             local coinVisual = candy:FindFirstChild("CoinVisual")
@@ -48,47 +50,144 @@ local function GetNearestCandy()
             end
         end
     end
+    
     return nearestCandy
 end
 
--- Запуск твина на ближайшую конфету
-local function StartCandyTween()
-    local nearestCandy = GetNearestCandy()
-    if nearestCandy then
+-- Запуск твина к ближайшей конфете
+local function StartNewTween(character)
+    if not AutoCandys then return end
+    
+    local player = Players.LocalPlayer
+    local nearestCandy = GetNearestCandy(player)
+    
+    if nearestCandy and character then
         local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            local tweenInfo = TweenInfo.new(
-                (nearestCandy.Position - humanoidRootPart.Position).Magnitude / TweenSpeed,
-                Enum.EasingStyle.Linear
-            )
-            local tween = TweenService:Create(humanoidRootPart, tweenInfo, {
-                CFrame = CFrame.new(nearestCandy.Position)
-            })
-            tween:Play()
-        end
+        if not humanoidRootPart then return end
+        
+        local tweenInfo = TweenInfo.new(
+            (nearestCandy.Position - humanoidRootPart.Position).Magnitude / TweenSpeed,
+            Enum.EasingStyle.Linear
+        )
+        
+        local tween = TweenService:Create(humanoidRootPart, tweenInfo, {
+            CFrame = CFrame.new(nearestCandy.Position)
+        })
+        
+        tween:Play()
+        return tween
     end
 end
 
--- Функция для сбора конфет
+-- Главная функция для автофарма конфет
 local function CollectCandy()
     while AutoCandys do
-        if not character then
-            character = player.Character or player.CharacterAdded:Wait()
+        local player = Players.LocalPlayer
+        if player.Character then
+            StartNewTween(player.Character)
         end
-        StartCandyTween()
-        wait(0.1)
+        wait(0.5)
     end
 end
 
--- Функция для включения/выключения No Clip
-local function SetNoClip(value)
-    NoClipEnabled = value
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not NoClipEnabled
+-- Включение автофарма через переменную AutoCandys
+AutoCandys = true
+CollectCandy()
+
+-- Функция для нахождения ближайшей конфеты
+local function findNearestCoin(radius)
+    local candyContainer = FindCoinContainer()
+    if not candyContainer then
+        print("CoinContainer not found")
+        return nil
+    end
+    local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart")
+    local nearestCoin = nil
+    local nearestDistance = radius
+    for _, coin in pairs(candyContainer:GetChildren()) do
+        local distance = (coin.Position - humanoidRootPart.Position).Magnitude
+        if distance < nearestDistance then
+            nearestCoin = coin
+            nearestDistance = distance
         end
     end
+    return nearestCoin
 end
+
+-- Функция для телепортации к конфете
+local function teleportToCoin(coin)
+    local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart")
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = coin.CFrame})
+    tween:Play()
+    return tween
+end
+
+-- Функция для телепортации к ближайшей или случайной конфете
+local function teleportToNearbyOrRandomCoin()
+    if not teleportEnabled then return end
+    local nearbyRadius = 50
+    local nearbyCoin = findNearestCoin(nearbyRadius)
+    if nearbyCoin then
+        print("Teleporting to nearby coin")
+        teleportToCoin(nearbyCoin)
+    else
+        local coinContainer = FindCoinContainer()
+        if not coinContainer then
+            print("CoinContainer not found")
+            return
+        end
+        local coins = coinContainer:GetChildren()
+        if #coins == 0 then
+            print("No coins found")
+            return
+        end
+        local randomCoin = coins[math.random(1, #coins)]
+        print("Teleporting to random coin")
+        teleportToCoin(randomCoin)
+    end
+end
+
+-- Функция для включения и отключения телепортации
+local function toggleTeleport()
+    teleportEnabled = not teleportEnabled
+    if teleportEnabled then
+        print("Teleport ON")
+    else
+        print("Teleport OFF")
+    end
+end
+
+-- Функция для включения/выключения NoClip
+local function toggleNoClip()
+    noClipEnabled = not noClipEnabled
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    humanoid.PlatformStand = noClipEnabled
+    if noClipEnabled then
+        print("NoClip ON")
+    else
+        print("NoClip OFF")
+    end
+end
+
+-- Запуск телепортации в фоне
+RunService.Heartbeat:Connect(function()
+    if teleportEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        teleportToNearbyOrRandomCoin()
+    end
+end)
+
+-- Пример использования
+toggleTeleport() -- Включить телепортацию
+-- toggleTeleport() -- Включить снова
+
+toggleNoClip() -- Включить NoClip
+-- toggleNoClip() -- Включить снова.
 
 -- Главный интерфейс
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
