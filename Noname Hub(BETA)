@@ -1,7 +1,7 @@
 -- Уведомление
 game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "Murder Mastery 2";
-    Text = "от scriptmausrb привет!";
+    Title = "No name Hub";
+    Text = "добро пожаловать";
     Duration = 15;
 })
 
