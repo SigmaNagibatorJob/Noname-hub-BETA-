@@ -1,11 +1,11 @@
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+\local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local player = game.Players.LocalPlayer
 
 -- Локальная версия скрипта
-local currentVersion = "1.0.0" 
+local currentVersion = "1.0.0"
 
 -- Ссылка на файл с последней версией на GitHub или другом ресурсе
 local versionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/main/Noname%20Hub(BETA).txt"
@@ -18,7 +18,7 @@ local function checkForUpdate()
 
     if success then
         -- Извлекаем версию из текста
-        local latestVersion = response:match("([%d%.]+)")  
+        local latestVersion = response:match("([%d%.]+)")
         if latestVersion ~= currentVersion then
             -- Обновление найдено, кидаем игрока
             TeleportService:Teleport(game.PlaceId, player)  -- Перезагрузка игры
@@ -87,6 +87,7 @@ local SettingsTab = Window:MakeTab({
     PremiumOnly = false
 })
 
+-- Объединение всех функций в одном табе
 SettingsTab:AddButton({
     Name = "Перезайти на текущий сервер",
     Callback = function()
