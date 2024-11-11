@@ -5,45 +5,44 @@ local TeleportService = game:GetService("TeleportService")
 local player = game.Players.LocalPlayer
 
 -- URL для проверки обновления скрипта
-local scriptVersionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/refs/heads/main/Noname%20Hub(BETA)"
-local currentScriptVersion = "1.0"  -- текущая версия вашего скрипта
+local scriptUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/refs/heads/main/Noname%20Hub(BETA)"
+local localScriptHash = "previous_script_hash_here"  -- здесь будет храниться хэш текущего скрипта (например, из локальной версии)
 
--- Функция для проверки актуальной версии скрипта
-local function checkForUpdate()
+-- Функция для получения хэша содержимого скрипта
+local function getScriptHash(url)
     local success, response = pcall(function()
-        return HttpService:GetAsync(scriptVersionUrl)
+        return HttpService:GetAsync(url)
     end)
-
     if success then
-        -- Предположим, что версия будет указана прямо в контенте файла в формате:
-        -- "Version: x.x"
-        local latestVersion = response:match("Version: (%d+%.%d+)")  
-        
-        if latestVersion then
-            print("Latest version found: " .. latestVersion)
-            if latestVersion ~= currentScriptVersion then
-                -- Если версия обновилась, выкидываем игрока с сервера
-                OrionLib:MakeNotification({
-                    Name = "Update Script",
-                    Content = "Ваш скрипт устарел. Выполняется обновление.",
-                    Image = "rbxassetid://1234567890",
-                    Time = 5
-                })
-                -- Выкидываем игрока
-                TeleportService:Teleport(game.PlaceId, player)
-            end
-        else
+        -- Возвращаем хэш содержимого
+        return HttpService:GenerateGUIDFromParts(response)  -- Используем GUID для хэширования контента
+    else
+        return nil
+    end
+end
+
+-- Функция для проверки актуальности скрипта
+local function checkForUpdate()
+    local newScriptHash = getScriptHash(scriptUrl)
+    
+    if newScriptHash then
+        if newScriptHash ~= localScriptHash then
+            -- Если хэш обновился, то кикаем игрока
             OrionLib:MakeNotification({
-                Name = "Ошибка",
-                Content = "Не удалось найти версию скрипта в файле.",
+                Name = "Update Script",
+                Content = "Обновление скрипта доступно. Выкидываю из сервера.",
                 Image = "rbxassetid://1234567890",
                 Time = 5
             })
+            -- Выкидываем игрока с сервера
+            TeleportService:Teleport(game.PlaceId, player)
+        else
+            print("Скрипт не обновился. Продолжаем выполнение.")
         end
     else
         OrionLib:MakeNotification({
             Name = "Ошибка",
-            Content = "Не удалось проверить обновления.",
+            Content = "Не удалось получить данные о скрипте.",
             Image = "rbxassetid://1234567890",
             Time = 5
         })
@@ -55,7 +54,7 @@ checkForUpdate()
 
 -- Ваш основной код скрипта ниже...
 
-local Window = OrionLib:MakeWindow({Name = "AutoFarm Script", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
+local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
 
 local MainTab = Window:MakeTab({
     Name = "Главное",
