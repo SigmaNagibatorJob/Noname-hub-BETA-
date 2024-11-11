@@ -2,7 +2,7 @@ local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shle
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
+local player = game.Players.LocalPlayer
 
 -- Локальная версия скрипта
 local currentVersion = "1.0.0" 
@@ -10,8 +10,8 @@ local currentVersion = "1.0.0"
 -- Ссылка на файл с последней версией на GitHub или другом ресурсе
 local versionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/main/Noname%20Hub(BETA).txt"
 
--- Функция проверки обновления у всех игроков, у которых открыт скрипт
-local function checkForUpdates()
+-- Функция проверки обновления
+local function checkForUpdate()
     local success, response = pcall(function()
         return HttpService:GetAsync(versionUrl)
     end)
@@ -19,32 +19,32 @@ local function checkForUpdates()
     if success then
         -- Извлекаем версию из текста
         local latestVersion = response:match("([%d%.]+)")  
-        
         if latestVersion ~= currentVersion then
-            -- Обновление найдено, кидаем игроков с уведомлением
-            for _, player in ipairs(Players:GetPlayers()) do
-                -- Проверяем, что игрок находится в игре и у него открыт скрипт
-                if player.Character and player:FindFirstChild("PlayerScripts") then
-                    local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)") -- Проверка на открытый скрипт
-                    if playerScript then
-                        -- Кикаем игрока
-                        player:Kick("Обновление скрипта доступно. Пожалуйста, обновите скрипт.")
-                    end
-                end
-            end
+            -- Обновление найдено, кидаем игрока
+            TeleportService:Teleport(game.PlaceId, player)  -- Перезагрузка игры
+            OrionLib:MakeNotification({
+                Name = "Обновление скрипта",
+                Content = "Новая версия скрипта доступна. Вы были кикнуты для обновления.",
+                Image = "rbxassetid://1234567890",
+                Time = 5
+            })
         end
     else
-        print("Не удалось проверить обновления.")
+        OrionLib:MakeNotification({
+            Name = "Ошибка",
+            Content = "Не удалось проверить обновления.",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
     end
 end
 
--- Вызываем функцию для проверки обновлений
-checkForUpdates()
+-- Проверяем обновления при запуске скрипта
+checkForUpdate()
 
--- Основное окно
-local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
+-- Основные функции скрипта, например, автофарм
+local Window = OrionLib:MakeWindow({Name = "AutoFarm Script", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
 
--- Главная вкладка
 local MainTab = Window:MakeTab({
     Name = "Главное",
     Icon = "rbxassetid://1234567890",
@@ -81,32 +81,6 @@ MainTab:AddSlider({
     end
 })
 
--- Вкладка "Мардер"
-local MurderTab = Window:MakeTab({
-    Name = "Мардер",
-    Icon = "rbxassetid://1234567890",
-    PremiumOnly = false
-})
-
-MurderTab:AddButton({
-    Name = "Убить всех",
-    Callback = function()
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                humanoid.Health = 0  -- Убийство игрока
-            end
-        end
-        OrionLib:MakeNotification({
-            Name = "Убийство",
-            Content = "Все игроки убиты!",
-            Image = "rbxassetid://1234567890",
-            Time = 5
-        })
-    end
-})
-
--- Вкладка "Настройки"
 local SettingsTab = Window:MakeTab({
     Name = "Настройки",
     Icon = "rbxassetid://1234567890",
@@ -116,7 +90,92 @@ local SettingsTab = Window:MakeTab({
 SettingsTab:AddButton({
     Name = "Перезайти на текущий сервер",
     Callback = function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+    end
+})
+
+SettingsTab:AddButton({
+    Name = "Присоединиться к маленькому серверу",
+    Callback = function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        for _, server in ipairs(servers.data) do
+            if server.playing < server.maxPlayers then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+                return
+            end
+        end
+        OrionLib:MakeNotification({
+            Name = "Ошибка",
+            Content = "Нет доступных маленьких серверов.",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+SettingsTab:AddButton({
+    Name = "Присоединиться к серверу с низким пингом",
+    Callback = function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        local bestPingServer = nil
+        local lowestPing = math.huge
+        for _, server in ipairs(servers.data) do
+            if server.ping and server.ping < lowestPing then
+                lowestPing = server.ping
+                bestPingServer = server
+            end
+        end
+        if bestPingServer then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, bestPingServer.id, player)
+        else
+            OrionLib:MakeNotification({
+                Name = "Ошибка",
+                Content = "Нет серверов с низким пингом.",
+                Image = "rbxassetid://1234567890",
+                Time = 5
+            })
+        end
+    end
+})
+
+SettingsTab:AddButton({
+    Name = "Сервер-хоп",
+    Callback = function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        for _, server in ipairs(servers.data) do
+            if server.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+                return
+            end
+        end
+        OrionLib:MakeNotification({
+            Name = "Ошибка",
+            Content = "Нет доступных серверов для хопа.",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+SettingsTab:AddButton({
+    Name = "Скопировать ID текущего сервера",
+    Callback = function()
+        setclipboard(game.JobId)
+        OrionLib:MakeNotification({
+            Name = "Скопировано",
+            Content = "ID текущего сервера скопирован в буфер обмена.",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+SettingsTab:AddTextbox({
+    Name = "Ввести ID сервера для перехода",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(serverId)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
     end
 })
 
