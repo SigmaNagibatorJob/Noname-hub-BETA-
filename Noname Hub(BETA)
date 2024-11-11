@@ -55,7 +55,7 @@ checkForUpdate()
 
 -- Ваш основной код скрипта ниже...
 
-local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
+local Window = OrionLib:MakeWindow({Name = "AutoFarm Script", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
 
 local MainTab = Window:MakeTab({
     Name = "Главное",
@@ -99,6 +99,7 @@ local SettingsTab = Window:MakeTab({
     PremiumOnly = false
 })
 
+-- Кнопка перезагрузки сервера
 SettingsTab:AddButton({
     Name = "Перезайти на текущий сервер",
     Callback = function()
@@ -106,6 +107,7 @@ SettingsTab:AddButton({
     end
 })
 
+-- Кнопка для присоединения к маленькому серверу
 SettingsTab:AddButton({
     Name = "Присоединиться к маленькому серверу",
     Callback = function()
@@ -121,6 +123,90 @@ SettingsTab:AddButton({
             Content = "Нет доступных маленьких серверов.",
             Image = "rbxassetid://1234567890",
             Time = 5
+        })
+    end
+})
+
+-- Кнопка для присоединения к серверу с низким пингом
+SettingsTab:AddButton({
+    Name = "Присоединиться к серверу с низким пингом",
+    Callback = function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        local bestPingServer = nil
+        local lowestPing = math.huge
+        for _, server in ipairs(servers.data) do
+            if server.ping and server.ping < lowestPing then
+                lowestPing = server.ping
+                bestPingServer = server
+            end
+        end
+        if bestPingServer then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, bestPingServer.id, player)
+        else
+            OrionLib:MakeNotification({
+                Name = "Ошибка",
+                Content = "Нет серверов с низким пингом.",
+                Image = "rbxassetid://1234567890",
+                Time = 5
+            })
+        end
+    end
+})
+
+-- Кнопка для хопа на другой сервер
+SettingsTab:AddButton({
+    Name = "Сервер-хоп",
+    Callback = function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        for _, server in ipairs(servers.data) do
+            if server.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+                return
+            end
+        end
+        OrionLib:MakeNotification({
+            Name = "Ошибка",
+            Content = "Нет доступных серверов для хопа.",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+-- Кнопка для копирования ID текущего сервера
+SettingsTab:AddButton({
+    Name = "Скопировать ID текущего сервера",
+    Callback = function()
+        setclipboard(game.JobId)
+        OrionLib:MakeNotification({
+            Name = "Скопировано",
+            Content = "ID текущего сервера скопирован в буфер обмена.",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+-- Ввод ID сервера для перехода
+SettingsTab:AddTextbox({
+    Name = "Ввести ID сервера для перехода",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(serverId)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
+    end
+})
+
+-- Кнопка для показа текущих настроек
+SettingsTab:AddButton({
+    Name = "Показать текущие настройки",
+    Callback = function()
+        local settingsInfo = string.format("Текущие настройки:\n- Автофарм: %s\n- Лимит монет: %d\n- Скорость: %d", tostring(_G.AutoFarm), coinLimit, speedValue)
+        OrionLib:MakeNotification({
+            Name = "Настройки",
+            Content = settingsInfo,
+            Image = "rbxassetid://1234567890",
+            Time = 10
         })
     end
 })
