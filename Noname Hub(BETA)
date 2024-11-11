@@ -1,38 +1,85 @@
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
--- Укажите ссылку на файл с последней версией скрипта
+-- Локальная версия скрипта
+local currentVersion = "1.0.0"  -- Обновите на вашу текущую версию
+
+-- Ссылка на файл с последней версией на GitHub или другом ресурсе
 local versionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/main/Noname%20Hub(BETA).txt"
 
--- Локальная версия скрипта (обновите эту версию при изменениях)
-local currentVersion = "1.0.0"
-
--- Функция для проверки обновлений
+-- Функция проверки обновления у всех игроков, у которых открыт скрипт
 local function checkForUpdates()
     local success, response = pcall(function()
         return HttpService:GetAsync(versionUrl)
     end)
 
     if success then
-        -- Извлекаем версию из файла
+        -- Извлекаем версию из текста
         local latestVersion = response:match("([%d%.]+)")  
-
+        
         if latestVersion ~= currentVersion then
-            -- Если версия отличается, кидаем игроков, у которых открыт скрипт
+            -- Обновление найдено, кидаем игроков с уведомлением
             for _, player in ipairs(Players:GetPlayers()) do
+                -- Проверяем, что игрок находится в игре и у него открыт скрипт
                 if player.Character and player:FindFirstChild("PlayerScripts") then
-                    local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)")  -- Проверка на наличие скрипта
+                    local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)") -- Проверка на открытый скрипт
                     if playerScript then
-                        -- Кикаем игрока с уведомлением
+                        -- Кикаем игрока с сообщением об обновлении
                         player:Kick("Обновление скрипта доступно. Пожалуйста, обновите скрипт.")
                     end
                 end
             end
         end
     else
-        warn("Не удалось проверить обновления.")
+        print("Не удалось проверить обновления.")
     end
 end
 
--- Запуск функции проверки обновлений
+-- Вызываем функцию для проверки обновлений
 checkForUpdates()
+
+-- Основное окно
+local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
+
+-- Вкладка "Мардер"
+local MurderTab = Window:MakeTab({
+    Name = "Мардер",
+    Icon = "rbxassetid://1234567890",
+    PremiumOnly = false
+})
+
+MurderTab:AddButton({
+    Name = "Убить всех",
+    Callback = function()
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                humanoid.Health = 0  -- Убийство игрока
+            end
+        end
+        OrionLib:MakeNotification({
+            Name = "Убийство",
+            Content = "Все игроки убиты!",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+-- Вкладка "Настройки"
+local SettingsTab = Window:MakeTab({
+    Name = "Настройки",
+    Icon = "rbxassetid://1234567890",
+    PremiumOnly = false
+})
+
+SettingsTab:AddButton({
+    Name = "Перезайти на текущий сервер",
+    Callback = function()
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+    end
+})
+
+OrionLib:Init()
