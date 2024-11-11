@@ -1,10 +1,11 @@
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
 local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
 -- Локальная версия скрипта
-local currentVersion = "1.0.0"  -- Обновите на вашу текущую версию
+local currentVersion = "1.0.0" 
 
 -- Ссылка на файл с последней версией на GitHub или другом ресурсе
 local versionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/main/Noname%20Hub(BETA).txt"
@@ -26,7 +27,7 @@ local function checkForUpdates()
                 if player.Character and player:FindFirstChild("PlayerScripts") then
                     local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)") -- Проверка на открытый скрипт
                     if playerScript then
-                        -- Кикаем игрока с сообщением об обновлении
+                        -- Кикаем игрока
                         player:Kick("Обновление скрипта доступно. Пожалуйста, обновите скрипт.")
                     end
                 end
@@ -42,6 +43,43 @@ checkForUpdates()
 
 -- Основное окно
 local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
+
+-- Главная вкладка
+local MainTab = Window:MakeTab({
+    Name = "Главное",
+    Icon = "rbxassetid://1234567890",
+    PremiumOnly = false
+})
+
+_G.AutoFarm = false
+local speedValue = _G.Speed or 23
+local coinLimit = 50
+
+MainTab:AddToggle({
+    Name = "Включить автофарм",
+    Default = _G.AutoFarm,
+    Callback = function(value)
+        _G.AutoFarm = value
+        OrionLib:MakeNotification({
+            Name = "Автофарм",
+            Content = _G.AutoFarm and "Автофарм включен" or "Автофарм отключен",
+            Image = "rbxassetid://1234567890",
+            Time = 5
+        })
+    end
+})
+
+MainTab:AddSlider({
+    Name = "Лимит монет для фарма",
+    Min = 10,
+    Max = 100,
+    Default = coinLimit,
+    Color = Color3.fromRGB(0, 128, 255),
+    Increment = 1,
+    Callback = function(value)
+        coinLimit = value
+    end
+})
 
 -- Вкладка "Мардер"
 local MurderTab = Window:MakeTab({
@@ -78,7 +116,7 @@ local SettingsTab = Window:MakeTab({
 SettingsTab:AddButton({
     Name = "Перезайти на текущий сервер",
     Callback = function()
-        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
     end
 })
 
