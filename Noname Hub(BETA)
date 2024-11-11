@@ -1,4 +1,48 @@
-local Window = OrionLib:MakeWindow({Name = "AutoFarm Script", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+
+-- Локальная версия скрипта
+local currentVersion = "1.0.0" 
+
+-- Ссылка на файл с последней версией на GitHub или другом ресурсе
+local versionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/main/Noname%20Hub(BETA).txt"
+
+-- Функция проверки обновления у всех игроков, у которых открыт скрипт
+local function checkForUpdates()
+    local success, response = pcall(function()
+        return HttpService:GetAsync(versionUrl)
+    end)
+
+    if success then
+        -- Извлекаем версию из текста
+        local latestVersion = response:match("([%d%.]+)")  
+        
+        if latestVersion ~= currentVersion then
+            -- Обновление найдено, кидаем игроков с уведомлением
+            for _, player in ipairs(Players:GetPlayers()) do
+                -- Проверяем, что игрок находится в игре и у него открыт скрипт
+                if player.Character and player:FindFirstChild("PlayerScripts") then
+                    local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)") -- Проверка на открытый скрипт
+                    if playerScript then
+                        -- Кикаем игрока
+                        player:Kick("Обновление скрипта доступно. Пожалуйста, обновите скрипт.")
+                    end
+                end
+            end
+        end
+    else
+        print("Не удалось проверить обновления.")
+    end
+end
+
+-- Вызываем функцию для проверки обновлений
+checkForUpdates()
+
+-- Дополнительные настройки и функции, например:
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+
+local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
 
 local MainTab = Window:MakeTab({
     Name = "Главное",
@@ -6,36 +50,48 @@ local MainTab = Window:MakeTab({
     PremiumOnly = false
 })
 
--- Вкладка Персонаж
-local CharacterTab = Window:MakeTab({
-    Name = "Персонаж",
-    Icon = "rbxassetid://1234567890",
-    PremiumOnly = false
-})
-
--- Переменная для скорости игры
+_G.AutoFarm = false
 local speedValue = _G.Speed or 23
+local coinLimit = 50
 
--- Добавление слайдера для изменения скорости игры
-CharacterTab:AddSlider({
-    Name = "Скорость игры",
-    Min = 10,
-    Max = 100,
-    Default = speedValue,
-    Color = Color3.fromRGB(0, 128, 255),
-    Increment = 1,
+MainTab:AddToggle({
+    Name = "Включить автофарм",
+    Default = _G.AutoFarm,
     Callback = function(value)
-        speedValue = value
-        game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = speedValue
+        _G.AutoFarm = value
         OrionLib:MakeNotification({
-            Name = "Скорость игры",
-            Content = "Скорость игры изменена на: " .. speedValue,
+            Name = "Автофарм",
+            Content = _G.AutoFarm and "Автофарм включен" or "Автофарм отключен",
             Image = "rbxassetid://1234567890",
             Time = 5
         })
     end
 })
 
--- Остальной код из вашего интерфейса...
+MainTab:AddSlider({
+    Name = "Лимит монет для фарма",
+    Min = 10,
+    Max = 100,
+    Default = coinLimit,
+    Color = Color3.fromRGB(0, 128, 255),
+    Increment = 1,
+    Callback = function(value)
+        coinLimit = value
+    end
+})
+
+-- Функции для настроек и других действий
+local SettingsTab = Window:MakeTab({
+    Name = "Настройки",
+    Icon = "rbxassetid://1234567890",
+    PremiumOnly = false
+})
+
+SettingsTab:AddButton({
+    Name = "Перезайти на текущий сервер",
+    Callback = function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+    end
+})
 
 OrionLib:Init()
