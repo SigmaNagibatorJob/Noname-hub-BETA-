@@ -1,97 +1,38 @@
 local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
--- Локальная версия скрипта
-local currentVersion = "1.0.0" 
-
--- Ссылка на файл с последней версией на GitHub или другом ресурсе
+-- Укажите ссылку на файл с последней версией скрипта
 local versionUrl = "https://raw.githubusercontent.com/SigmaNagibatorJob/Noname-hub-BETA-/main/Noname%20Hub(BETA).txt"
 
--- Функция проверки обновления у всех игроков, у которых открыт скрипт
+-- Локальная версия скрипта (обновите эту версию при изменениях)
+local currentVersion = "1.0.0"
+
+-- Функция для проверки обновлений
 local function checkForUpdates()
     local success, response = pcall(function()
         return HttpService:GetAsync(versionUrl)
     end)
 
     if success then
-        -- Извлекаем версию из текста
+        -- Извлекаем версию из файла
         local latestVersion = response:match("([%d%.]+)")  
-        
+
         if latestVersion ~= currentVersion then
-            -- Обновление найдено, кидаем игроков с уведомлением
+            -- Если версия отличается, кидаем игроков, у которых открыт скрипт
             for _, player in ipairs(Players:GetPlayers()) do
-                -- Проверяем, что игрок находится в игре и у него открыт скрипт
                 if player.Character and player:FindFirstChild("PlayerScripts") then
-                    local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)") -- Проверка на открытый скрипт
+                    local playerScript = player.PlayerScripts:FindFirstChild("Noname Hub(BETA)")  -- Проверка на наличие скрипта
                     if playerScript then
-                        -- Кикаем игрока
+                        -- Кикаем игрока с уведомлением
                         player:Kick("Обновление скрипта доступно. Пожалуйста, обновите скрипт.")
                     end
                 end
             end
         end
     else
-        print("Не удалось проверить обновления.")
+        warn("Не удалось проверить обновления.")
     end
 end
 
--- Вызываем функцию для проверки обновлений
+-- Запуск функции проверки обновлений
 checkForUpdates()
-
--- Дополнительные настройки и функции, например:
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
-
-local Window = OrionLib:MakeWindow({Name = "Noname Hub(BETA)", HidePremium = true, SaveConfig = true, ConfigFolder = "Orion"})
-
-local MainTab = Window:MakeTab({
-    Name = "Главное",
-    Icon = "rbxassetid://1234567890",
-    PremiumOnly = false
-})
-
-_G.AutoFarm = false
-local speedValue = _G.Speed or 23
-local coinLimit = 50
-
-MainTab:AddToggle({
-    Name = "Включить автофарм",
-    Default = _G.AutoFarm,
-    Callback = function(value)
-        _G.AutoFarm = value
-        OrionLib:MakeNotification({
-            Name = "Автофарм",
-            Content = _G.AutoFarm and "Автофарм включен" or "Автофарм отключен",
-            Image = "rbxassetid://1234567890",
-            Time = 5
-        })
-    end
-})
-
-MainTab:AddSlider({
-    Name = "Лимит монет для фарма",
-    Min = 10,
-    Max = 100,
-    Default = coinLimit,
-    Color = Color3.fromRGB(0, 128, 255),
-    Increment = 1,
-    Callback = function(value)
-        coinLimit = value
-    end
-})
-
--- Функции для настроек и других действий
-local SettingsTab = Window:MakeTab({
-    Name = "Настройки",
-    Icon = "rbxassetid://1234567890",
-    PremiumOnly = false
-})
-
-SettingsTab:AddButton({
-    Name = "Перезайти на текущий сервер",
-    Callback = function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
-    end
-})
-
-OrionLib:Init()
